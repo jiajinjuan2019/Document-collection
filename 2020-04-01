@@ -1,0 +1,389 @@
+# VUE工具函数总结
+* vue实现按需加载组件
+组件的按需加载是项目性能优化的一个环节，也可以降低首屏渲染时间，在项目中用到的组件按需加载的方式如下：
+* 使用() => import()， 具体代码如下：
+
+```
+<template>
+    <div>
+       <ComponentA />
+       <ComponentB />
+    </div>
+</template>
+<script>
+const ComponentA = () => import('./ComponentA')
+const ComponentB = () => import('./ComponentB')
+export default {
+    // ...
+    components: {
+    ComponentA, 
+    ComponentB 
+        },
+    // ...
+}
+</script>
+```
+* 使用resolve => require(['./ComponentA'], resolve)，使用方法如下：
+  
+```
+<template>
+    <div>
+       <ComponentA />
+    </div>
+</template>
+<script>
+const ComponentA = resolve => require(['./ComponentA'], resolve)
+export default {
+    // ...
+    components: {
+    ComponentA
+    },
+    // ...
+}
+</script>
+```
+-------
+* 识别ie浏览器
+
+```
+/**
+ * 识别ie--浅识别
+ */
+export const isIe = () => {
+    let explorer = window.navigator.userAgent;
+        //判断是否为IE浏览器
+    if (explorer.indexOf("MSIE") >= 0) {
+        return true;
+    }else {
+        return false
+    }
+}
+```
+
+* 颜色16进制转rgba
+
+```
+/**
+ * 颜色转换16进制转rgba
+ * @param {String} hex 
+ * @param {Number} opacity 
+ */
+export function hex2Rgba(hex, opacity) {
+    if(!hex) hex = "#2c4dae";
+    return "rgba(" + parseInt("0x" + hex.slice(1, 3)) + "," + parseInt("0x" + hex.slice(3, 5)) + "," + parseInt("0x" + hex.slice(5, 7)) + "," + (opacity || "1") + ")";
+}
+```
+
+* 去除html标签
+
+```
+// 去除html标签
+export const htmlSafeStr = (str) => {
+    return str.replace(/<[^>]+>/g, "")
+}
+```
+
+* 获取url参数对象
+
+
+```
+/* 获取url参数 */
+export const getQueryString = () => {
+    let qs = location.href.split('?')[1] || '',
+        args = {},
+        items = qs.length ? qs.split("&") : [];
+        items.forEach((item,i) => {
+            let arr = item.split('='),
+                name = decodeURIComponent(arr[0]),
+                value = decodeURIComponent(arr[1]);
+                name.length && (args[name] = value)
+        })
+    return args;
+}
+```
+* 解析url参数
+
+```
+/* 解析url参数 */
+export const paramsToStringify = (params) => {
+    if(params){
+        let query = [];
+        for(let key in params){
+            query.push(`${key}=${params[key]}`)
+        }
+        return `${query.join('&')}`
+    }else{
+        return ''
+    }
+}
+```
+* 将数据转化为数组
+
+```
+export const toArray = (data) => {
+    return Array.isArray(data) ? data : [data]
+}
+```
+* 带参数跳转url（hash模式）
+
+```
+/**
+ *  带参数跳转url（hash模式）
+ * @param {String} url 
+ * @param {Object} params 
+ */
+export const toPage = (url, params) => {
+    if(params){
+        let query = [];
+        for(let key in params){
+            query.push(`${key}=${params[key]}`)
+        }
+        window.location.href = `./index.html#/${url}?${query.join('&')}`;
+    }else{
+        window.location.href = `./index.html#/${url}`;
+    }
+}
+```
+* 控制字符串显示，超出指定字数则显示省略号
+
+```
+/**
+ * 指定字符串 溢出显示省略号
+ * @param {String} str
+ * @param {Number} num
+ */
+export const getSubStringSum = (str = "", num = 1) => {
+    let newStr;
+    if(str){
+        str = str + '';
+        if (str.trim().length > num ) {
+            newStr = str.trim().substring(0, num) + "...";
+        } else {
+            newStr = str.trim();
+        }
+    }else{
+        newStr = ''
+    }
+    return newStr;
+}
+```
+* 生成uuid
+
+
+```
+/**
+ * 生成uuid
+ * @param {number} len 生成指定长度的uuid
+ * @param {number} radix uuid进制数
+ */
+export function uuid(len, radix) {
+    let chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
+    let uuid = [], i;
+    radix = radix || chars.length;
+
+    if (len) {
+      for (i = 0; i < len; i++) uuid[i] = chars[0 | Math.random()*radix];
+    } else {
+      let r;
+
+      uuid[8] = uuid[13] = uuid[18] = uuid[23] = '-';
+      uuid[14] = '4';
+
+      for (i = 0; i < 36; i++) {
+        if (!uuid[i]) {
+          r = 0 | Math.random()*16;
+          uuid[i] = chars[(i == 19) ? (r & 0x3) | 0x8 : r];
+        }
+      }
+    }
+
+    return uuid.join('');
+}
+```
+* 生成指定格式的时间字符串
+
+```
+/**
+ * 生成指定格式的时间
+ * @param {*} timeStemp 时间戳
+ * @param {*} flag 格式符号
+ */
+export function formatTime(timeStemp, flag) {
+    let time = new Date(timeStemp);
+    let timeArr = [time.getFullYear(), time.getMonth() + 1, time.getDate()];
+    return timeArr.join(flag || '/')
+}
+```
+* 基于axios二次封装一个具有请求/响应拦截的http请求
+
+```
+import axios from 'axios'
+import qs from 'qs'
+
+// 请求拦截
+axios.interceptors.request.use(config => {
+  // 此处可以封装一些加载状态
+  return config
+}, error => {
+  return Promise.reject(error)
+})
+
+// 响应拦截
+axios.interceptors.response.use(response => {
+  return response
+}, error => {
+  return Promise.resolve(error.response)
+})
+
+function checkStatus (response) {
+  // 此处可以封装一些加载状态
+  // 如果http状态码正常，则直接返回数据
+  if(response) {
+    if (response.status === 200 || response.status === 304) {
+      return response.data
+      // 如果不需要除了data之外的数据，可以直接 return response.data
+    } else if (response.status === 401) {
+      location.href = '/login';
+    } else {
+      throw response.data
+    }
+  } else {
+    throw {data:'网络错误'}
+  }
+
+}
+
+// axios默认参数配置
+axios.defaults.baseURL = '/api/v0';
+axios.defaults.timeout = 10000;
+
+// restful API封装
+export default {
+  post (url, data) {
+    return axios({
+      method: 'post',
+      url,
+      data: qs.stringify(data),
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+      }
+    }).then(
+      (res) => {
+        return checkStatus(res)
+      }
+    )
+  },
+  get (url, params) {
+    return axios({
+      method: 'get',
+      url,
+      params, // get 请求时带的参数
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    }).then(
+      (res) => {
+        return checkStatus(res)
+      }
+    )
+  },
+  del (url, params) {
+    return axios({
+      method: 'delete',
+      url,
+      params, // get 请求时带的参数
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    }).then(
+      (res) => {
+        return checkStatus(res)
+      }
+    )
+  }
+}
+```
+* vue组件
+
+```
+<template>
+    <div>
+        <a-upload
+            :action="action"
+            listType="picture-card"
+            :fileList="fileList"
+            @preview="handlePreview"
+            @change="handleChange"
+            :remove="delFile"
+            :data="data"
+            >
+            <template v-if="!fileList.length && defaultValue">
+                <img :src="defaultValue" alt="" style="width: 100%">
+            </template>
+            <template v-else>
+                <div v-if="fileList.length < 2">
+                    <a-icon type="plus" />
+                    <div class="ant-upload-text">上传</div>
+                </div>
+            </template>
+        </a-upload>
+        <a-modal :visible="previewVisible" :footer="null" @cancel="handleCancel">
+            <img alt="example" style="width: 100%" :src="previewImage" />
+        </a-modal>
+    </div>   
+</template>
+
+<script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
+@Component
+export default class Upload extends Vue {
+  @Prop({ default: 'https://www.mocky.io/v2/5cc8019d300000980a055e76' })
+  action!: string;
+
+  @Prop()
+  defaultValue: string;
+
+  @Prop()
+  data: object;
+
+  @Prop({ default: function() {} })
+  onFileDel: any;
+
+  @Prop({ default: function() {} })
+  onFileChange: any;
+
+  public previewVisible: boolean =  false;
+  public previewImage: string =  '';
+  public fileList: object[] = [];
+
+  // 预览图片
+  public handlePreview(file: any) {
+    this.previewImage = file.url || file.thumbUrl;
+    this.previewVisible = true;
+  }
+
+  // 删除文件和回调
+  public delFile(file: any) {
+    this.fileList = [];
+    this.onFileDel();
+  }
+
+  // 文件上传变化的处理函数
+  public handleChange({ file }: any) {
+    this.fileList = [file];
+    if(file.status === 'done') {
+      this.onFileChange(file.response.url);
+    } else if(file.status === 'error') {
+      this.$message.error(file.response.msg)
+    }
+  }
+  // 取消预览
+  public handleCancel() {
+      this.previewVisible = false;
+  }
+}
+</script>
+```
+
+
